@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLIX CURATE - 영화 & 드라마 전문 큐레이션</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Inter & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#E50914',
+              dark: '#141414',
+              card: '#1F1F1F',
+              cardHover: '#2A2A2A',
+              gold: '#FFD700'
+            }
+          },
+          fontFamily: {
+            sans: ['Noto Sans KR', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #141414;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #E50914;
+    }
+    
+    .card-hover-effect {
+      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
+    }
+    .card-hover-effect:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 12px 24px -10px rgba(229, 9, 20, 0.4);
+    }
+    
+    /* Line Clamp */
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Modal Backdrop Blur */
+    .backdrop-blur-custom {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-brand-dark text-gray-100 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-brand-red selection:text-white">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header id="main-header" class="fixed top-0 left-0 right-0 z-40 transition-all duration-300 bg-gradient-to-b from-black/90 via-black/60 to-transparent px-4 md:px-12 py-4 flex items-center justify-between">
+    <div class="flex items-center space-x-8">
+      <!-- LOGO -->
+      <a href="#" onclick="navigateTo('home'); return false;" class="flex items-center space-x-2 text-2xl md:text-3xl font-black text-brand-red tracking-wider">
+        <i class="fa-solid fa-film"></i>
+        <span>FLIX<span class="text-white font-light text-xl">CURATE</span></span>
+      </a>
+      
+      <!-- NAV LINKS -->
+      <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-300">
+        <button onclick="navigateTo('home')" class="nav-btn hover:text-brand-red transition-colors active text-white font-bold" data-target="home">홈</button>
+        <button onclick="navigateTo('latest')" class="nav-btn hover:text-brand-red transition-colors" data-target="latest">최신 작품</button>
+        <button onclick="navigateTo('movie')" class="nav-btn hover:text-brand-red transition-colors" data-target="movie">영화</button>
+        <button onclick="navigateTo('tv')" class="nav-btn hover:text-brand-red transition-colors" data-target="tv">TV 드라마</button>
+        <button onclick="navigateTo('genres')" class="nav-btn hover:text-brand-red transition-colors" data-target="genres">장르별 큐레이션</button>
+        <button onclick="navigateTo('top-rated')" class="nav-btn hover:text-brand-red transition-colors" data-target="top-rated">명예의 전당</button>
+      </nav>
+    </div>
+
+    <!-- RIGHT CONTROLS -->
+    <div class="flex items-center space-x-4">
+      <!-- Search Trigger -->
+      <button onclick="focusSearch()" class="p-2 text-gray-300 hover:text-white transition-colors" title="작품 검색">
+        <i class="fa-solid fa-magnifying-glass text-lg"></i>
+      </button>
+
+      <!-- GAS / TMDB API Setting Button -->
+      <button onclick="toggleApiModal()" class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full border border-gray-700 bg-black/50 hover:border-brand-red transition-all">
+        <span id="api-status-dot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+        <span id="api-status-text" class="hidden sm:inline font-medium text-gray-300">샘플 모드</span>
+        <i class="fa-solid fa-gear text-gray-400"></i>
+      </button>
+
+      <!-- GAS Code View Modal Trigger -->
+      <button onclick="toggleGasModal()" class="hidden sm:flex items-center space-x-1 text-xs px-3 py-1.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700/50 hover:bg-emerald-900 transition-all" title="Apps Script Code.gs 보기">
+        <i class="fa-solid fa-code"></i>
+        <span>Code.gs</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-grow pt-16">
+
+    <!-- HERO FEATURED BANNER -->
+    <section id="hero-banner" class="relative w-full h-[70vh] md:h-[82vh] bg-cover bg-center flex items-end pb-12 px-4 md:px-12 transition-all duration-700 overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/40 to-black/30"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-brand-dark via-brand-dark/60 to-transparent"></div>
+
+      <!-- Banner Content -->
+      <div class="relative z-10 max-w-3xl space-y-4 animate-fade-in">
+        <div class="flex items-center space-x-3">
+          <span id="hero-type-badge" class="px-2.5 py-0.5 rounded text-xs font-bold bg-brand-red text-white uppercase tracking-wider">주목할 만한 신작</span>
+          <span id="hero-genre-badge" class="text-xs text-gray-300 bg-gray-800/80 px-2.5 py-0.5 rounded-full border border-gray-700">SF / 액션</span>
+          <div class="flex items-center text-brand-gold text-xs space-x-1">
+            <i class="fa-solid fa-star"></i>
+            <span id="hero-rating" class="font-bold text-white">8.9</span>
+            <span class="text-gray-400">(TMDB)</span>
+          </div>
+        </div>
+
+        <h1 id="hero-title" class="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
+          로딩 중...
+        </h1>
+
+        <p id="hero-overview" class="text-sm md:text-base text-gray-300 line-clamp-3 max-w-2xl font-light leading-relaxed">
+          최신 영화 및 드라마 데이터를 불러오는 중입니다. 잠시만 기다려주세요.
+        </p>
+
+        <div class="flex items-center space-x-4 pt-2">
+          <button id="hero-trailer-btn" onclick="" class="px-6 py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-all flex items-center space-x-2 shadow-lg">
+            <i class="fa-solid fa-play text-brand-red"></i>
+            <span>예고편 감상</span>
+          </button>
+          <button id="hero-detail-btn" onclick="" class="px-6 py-3 bg-gray-800/80 text-white font-medium rounded-lg hover:bg-gray-700 border border-gray-600 transition-all flex items-center space-x-2 backdrop-blur-sm">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>상세 정보</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH BAR SECTION -->
+    <section class="max-w-7xl mx-auto px-4 md:px-8 mt-6">
+      <div class="bg-brand-card p-4 rounded-2xl border border-gray-800/80 shadow-xl flex flex-col md:flex-row items-center gap-4">
+        <div class="relative w-full flex-grow">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input type="text" id="search-input" placeholder="영화 또는 드라마 제목, 감독, 키워드 검색..." oninput="handleSearch()"
+                 class="w-full bg-gray-900/90 text-white pl-11 pr-10 py-3 rounded-xl border border-gray-700 focus:outline-none focus:border-brand-red transition-all text-sm">
+          <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        
+        <!-- Media Type Filter Toggle -->
+        <div class="flex items-center bg-gray-900 p-1 rounded-xl border border-gray-800 w-full md:w-auto shrink-0 justify-center">
+          <button onclick="setFilterType('all')" id="filter-type-all" class="filter-type-btn px-4 py-2 text-xs font-semibold rounded-lg bg-brand-red text-white transition-all">전체</button>
+          <button onclick="setFilterType('movie')" id="filter-type-movie" class="filter-type-btn px-4 py-2 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition-all">영화</button>
+          <button onclick="setFilterType('tv')" id="filter-type-tv" class="filter-type-btn px-4 py-2 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition-all">TV 드라마</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN CONTENT CONTAINER SECTIONS -->
+    <div id="content-container" class="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">
+
+      <!-- SECTION 1: LATEST & TRENDING -->
+      <section id="section-latest">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+              <span class="w-1.5 h-6 bg-brand-red rounded-full"></span>
+              최신 공개작 & 화제작
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">최근 개봉 및 공개된 국내외 최신 콘텐츠를 확인하세요.</p>
+          </div>
+          <span class="text-xs text-gray-500 font-mono">실시간 업데이트</span>
+        </div>
+        <div id="grid-latest" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- SECTION 2: GENRE CURATION -->
+      <section id="section-genres" class="pt-4">
+        <div class="mb-6">
+          <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+            <span class="w-1.5 h-6 bg-brand-red rounded-full"></span>
+            장르별 맞춤 큐레이션
+          </h2>
+          <p class="text-xs text-gray-400 mt-1">전문 큐레이터가 추천하는 장르별 대표 명작 컬렉션</p>
+        </div>
+
+        <!-- Genre Pill Buttons -->
+        <div class="flex items-center space-x-2 overflow-x-auto pb-4 scrollbar-none" id="genre-pills">
+          <!-- JavaScript rendering -->
+        </div>
+
+        <!-- Genre Description Banner -->
+        <div id="genre-intro-box" class="bg-gradient-to-r from-gray-900 to-brand-card p-4 rounded-xl border border-gray-800 mb-6 text-xs md:text-sm text-gray-300 flex items-center justify-between">
+          <span id="genre-intro-text">장르를 선택하시면 해당 테마의 맞춤 큐레이션 작품을 선별해 드립니다.</span>
+          <i class="fa-solid fa-sparkles text-brand-gold"></i>
+        </div>
+
+        <div id="grid-genres" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- SECTION 3: HALL OF FAME / TOP RATED -->
+      <section id="section-top-rated" class="pt-4">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+              <span class="w-1.5 h-6 bg-brand-gold rounded-full"></span>
+              명예의 전당 (최고 평점작)
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">TMDB 및 전문가 평점 8.0 이상을 기록한 올타임 명작 컬렉션</p>
+          </div>
+          <div class="text-xs text-brand-gold font-medium bg-brand-gold/10 px-3 py-1 rounded-full border border-brand-gold/30">
+            ★ 평점 집계 기준: TMDB 글로벌 평점
+          </div>
+        </div>
+        <div id="grid-top-rated" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-black/90 border-t border-gray-800/80 mt-16 py-8 px-4 md:px-12 text-center text-xs text-gray-500">
+    <div class="max-w-7xl mx-auto space-y-3">
+      <div class="flex justify-center space-x-6 text-gray-400 font-medium">
+        <a href="#" onclick="navigateTo('home'); return false;" class="hover:text-white">홈</a>
+        <a href="#" onclick="toggleApiModal(); return false;" class="hover:text-white">API 설정</a>
+        <a href="#" onclick="toggleGasModal(); return false;" class="hover:text-white">Apps Script 개발용 코드</a>
+      </div>
+      <p>FLIX CURATE - Apps Script 20년차 전문가 구축 영화 & 드라마 Curation Platform</p>
+      <p class="text-gray-600">본 서비스는 TMDB (The Movie Database) API 데이터를 활용하며, API 키 미설정 시 샘플 데모 데이터로 구동됩니다.</p>
+    </div>
+  </footer>
+
+  <!-- DETAIL MODAL -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 sm:p-6 md:p-10 bg-black/80 backdrop-blur-custom transition-opacity duration-300">
+    <div class="bg-brand-card w-full max-w-4xl max-h-[90vh] rounded-2xl overflow-y-auto border border-gray-700 shadow-2xl relative text-gray-100 flex flex-col">
+      <!-- Close Button -->
+      <button onclick="closeDetailModal()" class="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-brand-red text-white flex items-center justify-center transition-all border border-gray-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <!-- Modal Header Backdrop Image -->
+      <div id="modal-backdrop" class="relative w-full h-64 sm:h-80 md:h-96 bg-cover bg-center shrink-0">
+        <div class="absolute inset-0 bg-gradient-to-t from-brand-card via-brand-card/40 to-transparent"></div>
+        <div class="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+          <div class="space-y-2">
+            <span id="modal-media-badge" class="px-2.5 py-0.5 rounded text-xs font-bold bg-brand-red text-white">영화</span>
+            <h2 id="modal-title" class="text-2xl sm:text-4xl font-black text-white drop-shadow-md">작품 제목</h2>
+            <p id="modal-original-title" class="text-xs sm:text-sm text-gray-300 italic">Original Title</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Body Content -->
+      <div class="p-6 md:p-8 space-y-6 flex-grow">
+        <!-- Quick Info Bar -->
+        <div class="flex flex-wrap items-center gap-4 text-xs sm:text-sm border-b border-gray-800 pb-4 text-gray-300">
+          <div class="flex items-center text-brand-gold font-bold">
+            <i class="fa-solid fa-star mr-1"></i>
+            <span id="modal-rating" class="text-white">8.5</span>
+            <span class="text-gray-500 font-normal ml-1">(TMDB)</span>
+          </div>
+          <span>•</span>
+          <span id="modal-release-date">2024-00-00</span>
+          <span>•</span>
+          <span id="modal-genres" class="text-gray-200 font-medium">장르 목록</span>
+          <span>•</span>
+          <span id="modal-runtime" class="text-gray-400">120분</span>
+        </div>
+
+        <!-- Curation Point / Recommendation Reason -->
+        <div class="bg-brand-red/10 border border-brand-red/30 p-4 rounded-xl space-y-1">
+          <div class="text-xs font-bold text-brand-red flex items-center gap-1.5">
+            <i class="fa-solid fa-lightbulb"></i>
+            <span>큐레이터 추천 포인트</span>
+          </div>
+          <p id="modal-curation-reason" class="text-xs sm:text-sm text-gray-200 leading-relaxed">
+            전문가가 추천하는 이 작품의 주요 매력 포인트입니다.
+          </p>
+        </div>
+
+        <!-- Synopsis -->
+        <div class="space-y-2">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-align-left text-brand-red"></i> 줄거리
+          </h3>
+          <p id="modal-overview" class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+            줄거리 정보가 표시됩니다.
+          </p>
+        </div>
+
+        <!-- Cast & Director -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm pt-2">
+          <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800">
+            <span class="text-gray-400 block text-xs">감독/연출</span>
+            <span id="modal-director" class="font-medium text-white">정보 없음</span>
+          </div>
+          <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800">
+            <span class="text-gray-400 block text-xs">주요 출연진</span>
+            <span id="modal-cast" class="font-medium text-white">정보 없음</span>
+          </div>
+        </div>
+
+        <!-- Video Trailer Container -->
+        <div class="space-y-3 pt-2">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-brands fa-youtube text-red-500"></i> 공식 예고편
+          </h3>
+          <div id="modal-trailer-wrapper" class="aspect-video w-full bg-black rounded-xl overflow-hidden border border-gray-800 flex items-center justify-center">
+            <!-- Trailer iframe or button injected via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API KEY SETTING MODAL -->
+  <div id="api-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-custom">
+    <div class="bg-brand-card w-full max-w-md p-6 rounded-2xl border border-gray-700 shadow-2xl relative space-y-4">
+      <button onclick="toggleApiModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 text-brand-red">
+        <i class="fa-solid fa-key text-xl"></i>
+        <h3 class="text-lg font-bold text-white">TMDB API 연동 설정</h3>
+      </div>
+
+      <p class="text-xs text-gray-300 leading-relaxed">
+        TMDB(The Movie Database) API Key를 입력하시면 실제 실시간 최신 영화 및 드라마 데이터를 불러옵니다. API 키가 없어도 제공되는 고품질 <strong>샘플 데이터 모드</strong>로 모든 기능을 체험하실 수 있습니다.
+      </p>
+
+      <div class="space-y-2">
+        <label class="text-xs text-gray-400 block font-medium">TMDB API Key (v3 auth)</label>
+        <input type="text" id="api-key-input" placeholder="예: 1a2b3c4d5e..."
+               class="w-full bg-gray-900 text-white px-3 py-2.5 rounded-lg border border-gray-700 focus:outline-none focus:border-brand-red text-xs">
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <button onclick="clearApiKey()" class="text-xs text-gray-400 hover:text-red-400 underline">API 키 초기화</button>
+        <div class="space-x-2">
+          <button onclick="toggleApiModal()" class="px-4 py-2 bg-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-700 text-gray-300">취소</button>
+          <button onclick="saveApiKey()" class="px-4 py-2 bg-brand-red text-xs font-semibold rounded-lg hover:bg-red-700 text-white">저장 및 적용</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAS CODE PREVIEW MODAL -->
+  <div id="gas-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-custom">
+    <div class="bg-brand-card w-full max-w-3xl max-h-[85vh] p-6 rounded-2xl border border-emerald-700/50 shadow-2xl relative flex flex-col space-y-4">
+      <button onclick="toggleGasModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 text-emerald-400">
+        <i class="fa-solid fa-file-code text-xl"></i>
+        <h3 class="text-lg font-bold text-white">Google Apps Script (Code.gs) 배포 가이드</h3>
+      </div>
+
+      <p class="text-xs text-gray-300">
+        이 프로젝트를 Google Apps Script에서 웹 앱으로 배포할 때 사용 가능한 백엔드 `Code.gs` 코드입니다.
+      </p>
+
+      <div class="relative flex-grow bg-gray-950 p-4 rounded-xl border border-gray-800 overflow-y-auto font-mono text-xs text-emerald-300">
+        <button onclick="copyGasCode()" class="absolute top-3 right-3 px-3 py-1 bg-emerald-900 hover:bg-emerald-800 text-white rounded text-[10px]">복사</button>
+        <pre id="gas-code-content">
+// ==========================================
+// Google Apps Script : Code.gs
+// ==========================================
+
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('FLIX CURATE - 영화 & 드라마 큐레이션')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+}
+
+/**
+ * Server-side TMDB proxy call if API Key is stored in Script Properties
+ */
+function fetchTmdbData(endpoint, params) {
+  var apiKey = PropertiesService.getScriptProperties().getProperty('TMDB_API_KEY');
+  if (!apiKey) {
+    return { success: false, error: 'API Key not set in Script Properties.' };
+  }
+  
+  var url = 'https://api.themoviedb.org/3' + endpoint + '?api_key=' + apiKey + '&language=ko-KR';
+  if (params) {
+    for (var key in params) {
+      url += '&' + key + '=' + encodeURIComponent(params[key]);
+    }
+  }
+  
+  try {
+    var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    return { success: true, data: JSON.parse(response.getContentText()) };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+        </pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // ==========================================
+    // SAMPLE DEMO DATA (Fallback Mode)
+    // ==========================================
+    const SAMPLE_DATA = [
+      {
+        id: 's1',
+        title: '파묘 (Exhuma)',
+        original_title: 'Exhuma',
+        media_type: 'movie',
+        genre_ids: ['스릴러', '공포', '미스터리'],
+        release_date: '2024-02-22',
+        vote_average: 8.4,
+        poster_path: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800&auto=format&fit=crop',
+        backdrop_path: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1600&auto=format&fit=crop',
+        overview: '미국 LA, 조상들의 묏자리가 화근이 되어 기이한 병이 대대로 대물림되는 집안의 제안을 받은 무당 화림과 봉길. 거액의 돈을 받고 풍수사 상덕, 장의사 영근과 함께 파묘를 시작하는데...',
+        curation_reason: '한국 민속 오컬트의 새로운 지평을 연 작품. 신선한 소재와 최민식, 김고은의 압도적인 연기 시너지!',
+        director: '장재현',
+        cast: '최민식, 김고은, 유해진, 이도현',
+        runtime: '134분',
+        trailer_url: 'https://www.youtube.com/embed/xlL388sQeEU'
+      },
+      {
+        id: 's2',
+        title: '선재 업고 튀어',
+        original_title: 'Lovely Runner',
+        media_type: 'tv',
+        genre_ids: ['로맨스', '판타지', '코미디'],
+        release_date: '2024-04-08',
+        vote_average: 8.9,
+        poster_path: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop',
+        backdrop_path: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1600&auto=format&fit=crop',
+        overview: '삶의 의지를 놓아버린 순간, 자신을 살게 해줬던 유명 아티스트 류선재. 그의 비극적인 삶을 막기 위해 15년 전 과거로 돌아간 열성팬 임솔의 구원 타임슬립 로맨스.',
+        curation_reason: '글로벌 신드롬을 일으킨 설렘 유발 타임슬립 로맨스! 변우석과 김혜윤의 환상적인 케미스트리.',
+        director: '윤종호, 김태엽',
+        cast: '변우석, 김혜윤, 송건희, 이승협',
+        runtime: '16부작',
+        trailer_url: 'https://www.youtube.com/embed/xlL388sQeEU'
+      },
+      {
+        id: 's3',
+        title: '듄: 파트 2 (Dune: Part Two)',
+        original_title: 'Dune: Part Two',
+        media_type: 'movie',
+        genre_ids: ['SF', '액션', '판타지'],
+        release_date: '2024-02-28',
+        vote_average: 8.7,
+        poster_path: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop',
+        backdrop_path: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1600&auto=format&fit=crop',
+        overview: '황제의 음모로 멸문한 가문의 유일한 후계자 폴. 어머니 제시카와 함께 사막으로 도망친 그는 반란군들과 힘을 합쳐 가문의 원수들과 황제에 맞서는 거대한 전쟁을 준비한다.',
+        curation_reason: '시각적, 청각적 경이로움을 선사하는 영화 역사상 가장 완벽한 SF 스펙터클 서사시.',
+        director: '드니 빌뇌브',
+        cast: '티모시 샬라메, 젠데이아, 레베카 퍼거슨, 오스틴 버틀러',
+        runtime: '166분',
+        trailer_url: 'https://www.youtube.com/embed/Way9Dexny3w'
+      },
+      {
+        id: 's4',
+        title: '눈물의 여왕',
+        original_title: 'Queen of Tears',
+        media_type: 'tv',
+        genre_ids: ['로맨스', '코미디', '드라마'],
+        release_date: '2024-03-09',
+        vote_average: 8.6,
+        poster_path: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop',
+        backdrop_path: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600&auto=format&fit=crop',
+        overview: '퀸즈 그룹 재벌 3세 홍해인과 용두리 이장 아들 백현우. 3년 차 부부의 아찔한 위기와 기적처럼 다시 시작되는 사랑 이야기를 담은 드라마다.',
+        curation_reason: '박지은 작가 특유의 재치 있는 대사와 김수현-김지원 커플의 압도적인 몰입감.',
+        director: '장영우, 김희원',
+        cast: '김수현, 김지원, 박성훈, 곽동연',
+        runtime: '16부작',
+        trailer_url: 'https://www.youtube.com/embed/xlL388sQeEU'
+      },
+      {
+        id: 's5',
+        title: '범죄도시 4',
+        original_title: 'The RoundUp : Punishment',
+        media_type: 'movie',
+        genre_ids: ['액션', '범죄', '코미디'],
+        release_date: '2024-04-24',
+        vote_average: 7.8,
+        poster_path: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=800&auto=format&fit=crop',
+        backdrop_path: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1600&auto=format&fit=crop',
+        overview: '신종 마약 사건 조사 중, 국경을 넘은 대규모 불법 도박 조직을 소탕하기 위해 괴물형사 마석도와 광수대가 펼치는 통쾌한 범죄 소탕 작전.',
+        curation_reason: '시원하고 강력한 통쾌 액션! 마동석 표 액션 블록버스터의 확실한 재미 보장.',
+        director: '허명행',
+        cast: '마동석, 김무열, 이동휘, 박지환',
+        runtime: '109분',
+        trailer_url: 'https://www.youtube.com/embed/xlL388sQeEU'
+      },
+      {
+        id: 's6',
+        title: '오징어 게임 시즌 2',
+        original_title: 'Squid Game Season 2',
+        media_type: 'tv',
+        genre_ids: ['스릴러', '미스터리', '액션'],
+        release_date: '2024-12-26',
+        vote_average: 8.8,
+        poster_path: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800&auto=format&fit=crop',
+        backdrop_path: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1600&auto=format&fit=crop',
+        overview: '복수를 다짐하고 다시 돌아와 게임에 참가하는 기훈과 그를 맞이하는 프론트맨의 치열한 대결, 그리고 다시 시작되는 잔혹한 게임.',
+        curation_reason: '전 세계를 사로잡은 넷플릭스 역대 최고 히트작의 정식 후속작! 한층 더 심화된 심리전.',
+        director: '황동혁',
+        cast: '이정재, 이병헌, 임시완, 강하늘, 위하준',
+        runtime: '6부작',
+        trailer_url: 'https://www.youtube.com/embed/xlL388sQeEU'
+      }
+    ];
+
+    // GENRES DEFINITION
+    const GENRES = [
+      { id: 'all', name: '전체', desc: '모든 장르의 다채로운 작품들을 모아 제공합니다.' },
+      { id: '로맨스', name: '💕 로맨스', desc: '가슴 떨리는 설렘과 깊은 감동을 전하는 사랑 이야기' },
+      { id: '액션', name: '💥 액션', desc: '손에 땀을 쥐게 하는 통쾌한 스릴과 화려한 타격감' },
+      { id: '스릴러', name: '🔪 스릴러', desc: '숨 막히는 긴장감과 심리적 서스펜스가 돋보이는 작품' },
+      { id: '코미디', name: '🤣 코미디', desc: '지친 일상에 유쾌한 웃음과 힐링을 전달하는 선택' },
+      { id: '판타지', name: '🔮 판타지', desc: '상상력을 자극하는 독창적 세계관과 신비로운 서사' },
+      { id: '공포', name: '👻 공포', desc: '등골을 서늘하게 만드는 오싹한 오컬트와 호러' },
+      { id: '미스터리', name: '🕵️ 미스터리', desc: '반전과 단서를 풀어가는 흥미진진한 추리 서사' },
+      { id: 'SF', name: '🚀 SF', desc: '우주와 미래 기술, 경이로운 과학적 세계관' }
+    ];
+
+    // STATE MANAGEMENT
+    let apiKey = localStorage.getItem('TMDB_API_KEY') || '';
+    let currentMediaType = 'all'; // all, movie, tv
+    let currentSelectedGenre = 'all';
+    let loadedItems = [];
+
+    // INITIALIZATION ON LOAD
+    window.onload = function() {
+      updateApiStatusUI();
+      renderGenrePills();
+      loadData();
+    };
+
+    // UI UPDATE FOR API STATUS
+    function updateApiStatusUI() {
+      const dot = document.getElementById('api-status-dot');
+      const text = document.getElementById('api-status-text');
+      const input = document.getElementById('api-key-input');
+      
+      if (apiKey) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        text.innerText = 'TMDB API 연동됨';
+        text.className = 'hidden sm:inline font-medium text-emerald-400';
+        input.value = apiKey;
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+        text.innerText = '샘플 모드';
+        text.className = 'hidden sm:inline font-medium text-amber-400';
+      }
+    }
+
+    // MAIN DATA LOAD ROUTINE
+    async function loadData() {
+      if (apiKey) {
+        try {
+          // Fetch Trending Movies & TV from TMDB API
+          const movies = await fetchTmdb('/trending/movie/week');
+          const tvs = await fetchTmdb('/trending/tv/week');
+          
+          if (movies && tvs) {
+            const formattedMovies = movies.results.map(formatTmdbItem.bind(null, 'movie'));
+            const formattedTvs = tvs.results.map(formatTmdbItem.bind(null, 'tv'));
+            loadedItems = [...formattedMovies, ...formattedTvs];
+          } else {
+            console.warn('API Response fallback to sample');
+            loadedItems = SAMPLE_DATA;
+          }
+        } catch (err) {
+          console.error('TMDB API Error:', err);
+          loadedItems = SAMPLE_DATA;
+        }
+      } else {
+        loadedItems = SAMPLE_DATA;
+      }
+
+      renderAllSections();
+    }
+
+    // TMDB API HELPER
+    async function fetchTmdb(endpoint, params = {}) {
+      const queryStr = new URLSearchParams({
+        api_key: apiKey,
+        language: 'ko-KR',
+        ...params
+      }).toString();
+
+      const res = await fetch(`https://api.themoviedb.org/3${endpoint}?${queryStr}`);
+      if (!res.ok) throw new Error('API Request Failed');
+      return await res.json();
+    }
+
+    // FORMAT TMDB ITEM
+    function formatTmdbItem(type, item) {
+      return {
+        id: item.id,
+        title: item.title || item.name,
+        original_title: item.original_title || item.original_name || '',
+        media_type: type,
+        genre_ids: mapGenreIds(item.genre_ids),
+        release_date: item.release_date || item.first_air_date || '공개 예정',
+        vote_average: item.vote_average ? Number(item.vote_average.toFixed(1)) : 0.0,
+        poster_path: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://placehold.co/500x750/1f1f1f/ffffff?text=No+Poster',
+        backdrop_path: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : 'https://placehold.co/1280x720/141414/ffffff?text=No+Image',
+        overview: item.overview || '상세 줄거리 정보가 준비 중입니다.',
+        curation_reason: `${item.title || item.name} - 글로벌 평점 ${item.vote_average?.toFixed(1)}점을 기록 중인 주목받는 작품입니다.`,
+        director: 'TMDB 실시간 연동',
+        cast: '상세 정보 확인',
+        runtime: type === 'movie' ? '영화' : '드라마 시리즈',
+        trailer_url: `https://www.youtube.com/results?search_query=${encodeURIComponent((item.title || item.name) + ' 예고편')}`
+      };
+    }
+
+    function mapGenreIds(ids) {
+      if (!ids) return ['기타'];
+      const map = {
+        28: '액션', 12: '판타지', 16: '애니메이션', 35: '코미디', 80: '범죄',
+        99: '다큐멘터리', 18: '드라마', 10751: '가족', 14: '판타지', 36: '역사',
+        27: '공포', 10402: '음악', 9648: '미스터리', 10749: '로맨스', 878: 'SF',
+        10770: 'TV영화', 53: '스릴러', 10752: '전쟁', 37: '서부', 10759: '액션',
+        10765: 'SF', 10768: '전쟁'
+      };
+      return ids.map(id => map[id] || '드라마');
+    }
+
+    // RENDER ALL SECTIONS
+    function renderAllSections() {
+      if (loadedItems.length === 0) return;
+
+      // Render Hero Banner
+      const heroItem = loadedItems[0];
+      setHeroBanner(heroItem);
+
+      // Render Section 1: Latest & Trending
+      renderCardGrid('grid-latest', filterItems(loadedItems));
+
+      // Render Section 2: Genre Grid
+      renderGenreSection();
+
+      // Render Section 3: Top Rated
+      const topRated = [...loadedItems].sort((a,b) => b.vote_average - a.vote_average);
+      renderCardGrid('grid-top-rated', filterItems(topRated));
+    }
+
+    // HERO BANNER SETTER
+    function setHeroBanner(item) {
+      document.getElementById('hero-banner').style.backgroundImage = `url('${item.backdrop_path}')`;
+      document.getElementById('hero-type-badge').innerText = item.media_type === 'movie' ? '주목할 만한 영화' : '주목할 만한 TV 드라마';
+      document.getElementById('hero-genre-badge').innerText = item.genre_ids.join(' / ');
+      document.getElementById('hero-rating').innerText = item.vote_average;
+      document.getElementById('hero-title').innerText = item.title;
+      document.getElementById('hero-overview').innerText = item.overview;
+      
+      document.getElementById('hero-trailer-btn').onclick = () => openDetailModal(item.id);
+      document.getElementById('hero-detail-btn').onclick = () => openDetailModal(item.id);
+    }
+
+    // FILTER ITEMS BY MEDIA TYPE & SEARCH
+    function filterItems(items) {
+      const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+      return items.filter(item => {
+        const matchesType = currentMediaType === 'all' || item.media_type === currentMediaType;
+        const matchesSearch = !searchVal || 
+          item.title.toLowerCase().includes(searchVal) || 
+          item.overview.toLowerCase().includes(searchVal) ||
+          item.genre_ids.some(g => g.toLowerCase().includes(searchVal));
+        return matchesType && matchesSearch;
+      });
+    }
+
+    // RENDER GENRE PILLS
+    function renderGenrePills() {
+      const container = document.getElementById('genre-pills');
+      container.innerHTML = GENRES.map(g => `
+        <button onclick="selectGenre('${g.id}')" id="pill-${g.id}" 
+                class="genre-pill whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold border transition-all ${g.id === currentSelectedGenre ? 'bg-brand-red text-white border-brand-red shadow-lg' : 'bg-gray-900 text-gray-300 border-gray-700 hover:border-gray-500'}">
+          ${g.name}
+        </button>
+      `).join('');
+    }
+
+    // SELECT GENRE ACTION
+    function selectGenre(genreId) {
+      currentSelectedGenre = genreId;
+      renderGenrePills();
+      renderGenreSection();
+    }
+
+    // RENDER GENRE SECTION
+    function renderGenreSection() {
+      const genreObj = GENRES.find(g => g.id === currentSelectedGenre);
+      document.getElementById('genre-intro-text').innerText = genreObj ? genreObj.desc : '';
+
+      let filtered = filterItems(loadedItems);
+      if (currentSelectedGenre !== 'all') {
+        filtered = filtered.filter(item => item.genre_ids.includes(currentSelectedGenre));
+      }
+
+      renderCardGrid('grid-genres', filtered);
+    }
+
+    // GENERIC CARD GRID RENDERER
+    function renderCardGrid(elementId, items) {
+      const container = document.getElementById(elementId);
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-gray-500">
+            <i class="fa-solid fa-film text-3xl mb-2 block"></i>
+            <p class="text-sm">해당 조건에 일치하는 작품이 없습니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div onclick="openDetailModal('${item.id}')" class="bg-brand-card rounded-xl overflow-hidden cursor-pointer border border-gray-800 card-hover-effect flex flex-col justify-between group">
+          <div class="relative aspect-[2/3] overflow-hidden bg-gray-900">
+            <img src="${item.poster_path}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" onerror="this.src='https://placehold.co/500x750/1f1f1f/ffffff?text=Poster'">
+            <div class="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase">
+              ${item.media_type === 'movie' ? '영화' : '드라마'}
+            </div>
+            <div class="absolute bottom-2 right-2 bg-brand-dark/90 text-brand-gold font-bold px-2 py-0.5 rounded text-xs flex items-center space-x-1 border border-brand-gold/30">
+              <i class="fa-solid fa-star text-[10px]"></i>
+              <span>${item.vote_average}</span>
+            </div>
+          </div>
+          <div class="p-3 flex-grow flex flex-col justify-between space-y-2">
+            <div>
+              <h3 class="font-bold text-sm text-white group-hover:text-brand-red transition-colors line-clamp-1">${item.title}</h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">${item.release_date.split('-')[0]} • ${item.genre_ids.slice(0,2).join(', ')}</p>
+            </div>
+            <p class="text-[11px] text-gray-400 line-clamp-2 font-light leading-snug">${item.overview}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // DETAIL MODAL LOGIC
+    function openDetailModal(id) {
+      const item = loadedItems.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      document.getElementById('modal-backdrop').style.backgroundImage = `url('${item.backdrop_path}')`;
+      document.getElementById('modal-media-badge').innerText = item.media_type === 'movie' ? '영화' : 'TV 드라마';
+      document.getElementById('modal-title').innerText = item.title;
+      document.getElementById('modal-original-title').innerText = item.original_title ? `원제: ${item.original_title}` : '';
+      document.getElementById('modal-rating').innerText = item.vote_average;
+      document.getElementById('modal-release-date').innerText = item.release_date;
+      document.getElementById('modal-genres').innerText = item.genre_ids.join(', ');
+      document.getElementById('modal-runtime').innerText = item.runtime;
+      document.getElementById('modal-curation-reason').innerText = item.curation_reason;
+      document.getElementById('modal-overview').innerText = item.overview;
+      document.getElementById('modal-director').innerText = item.director;
+      document.getElementById('modal-cast').innerText = item.cast;
+
+      const trailerWrapper = document.getElementById('modal-trailer-wrapper');
+      if (item.trailer_url.includes('youtube.com/embed')) {
+        trailerWrapper.innerHTML = `
+          <iframe src="${item.trailer_url}?autoplay=0" class="w-full h-full border-0" allowfullscreen></iframe>
+        `;
+      } else {
+        trailerWrapper.innerHTML = `
+          <a href="${item.trailer_url}" target="_blank" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg flex items-center space-x-2 transition-all">
+            <i class="fa-brands fa-youtube text-lg"></i>
+            <span>YouTube에서 예고편 검색 / 감상하기</span>
+          </a>
+        `;
+      }
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+      document.getElementById('modal-trailer-wrapper').innerHTML = '';
+      document.body.style.overflow = 'auto';
+    }
+
+    // SEARCH & FILTER HANDLERS
+    function handleSearch() {
+      const val = document.getElementById('search-input').value;
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (val) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderAllSections();
+    }
+
+    function clearSearch() {
+      document.getElementById('search-input').value = '';
+      handleSearch();
+    }
+
+    function focusSearch() {
+      document.getElementById('search-input').focus();
+    }
+
+    function setFilterType(type) {
+      currentMediaType = type;
+      document.querySelectorAll('.filter-type-btn').forEach(btn => {
+        btn.className = 'filter-type-btn px-4 py-2 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition-all';
+      });
+      const activeBtn = document.getElementById(`filter-type-${type}`);
+      if (activeBtn) {
+        activeBtn.className = 'filter-type-btn px-4 py-2 text-xs font-semibold rounded-lg bg-brand-red text-white transition-all';
+      }
+      renderAllSections();
+    }
+
+    function navigateTo(target) {
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('text-white', 'font-bold'));
+      const activeNav = document.querySelector(`.nav-btn[data-target="${target}"]`);
+      if (activeNav) activeNav.classList.add('text-white', 'font-bold');
+
+      if (target === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (target === 'latest') {
+        document.getElementById('section-latest').scrollIntoView({ behavior: 'smooth' });
+      } else if (target === 'movie') {
+        setFilterType('movie');
+        document.getElementById('section-latest').scrollIntoView({ behavior: 'smooth' });
+      } else if (target === 'tv') {
+        setFilterType('tv');
+        document.getElementById('section-latest').scrollIntoView({ behavior: 'smooth' });
+      } else if (target === 'genres') {
+        document.getElementById('section-genres').scrollIntoView({ behavior: 'smooth' });
+      } else if (target === 'top-rated') {
+        document.getElementById('section-top-rated').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // API KEY MODAL LOGIC
+    function toggleApiModal() {
+      const modal = document.getElementById('api-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    function saveApiKey() {
+      const val = document.getElementById('api-key-input').value.trim();
+      if (val) {
+        localStorage.setItem('TMDB_API_KEY', val);
+        apiKey = val;
+      } else {
+        localStorage.removeItem('TMDB_API_KEY');
+        apiKey = '';
+      }
+      updateApiStatusUI();
+      toggleApiModal();
+      loadData();
+    }
+
+    function clearApiKey() {
+      localStorage.removeItem('TMDB_API_KEY');
+      apiKey = '';
+      document.getElementById('api-key-input').value = '';
+      updateApiStatusUI();
+      toggleApiModal();
+      loadData();
+    }
+
+    // GAS MODAL LOGIC
+    function toggleGasModal() {
+      document.getElementById('gas-modal').classList.toggle('hidden');
+    }
+
+    function copyGasCode() {
+      const code = document.getElementById('gas-code-content').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('Google Apps Script Code.gs 코드가 클립보드에 복사되었습니다!');
+      }).catch(err => {
+        console.error('Copy failed:', err);
+      });
+    }
+  </script>
+</body>
+</html>
